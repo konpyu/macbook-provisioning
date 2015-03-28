@@ -75,6 +75,7 @@
       - { name: witch }
       - { name: macvim }
       - { name: evernote }
+      - { name: intellij-idea-ce }
 
   tasks:
     - name: add tap of homebrew
