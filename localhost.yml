@@ -1,0 +1,116 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  sudo: no
+  vars:
+    homebrew_taps:
+      - homebrew/binary
+      - homebrew/dupes
+      - caskroom/cask
+      - railwaycat/emacsmacport
+      - sanemat/font
+    homebrew_packages:
+      - { name: readline }
+      - { name: openssl }
+      - { name: openssl, state: linked, install_options: force }
+      - { name: python }
+      - { name: ansible }
+      - { name: coreutils }
+      - { name: git }
+      - { name: wget }
+      - { name: curl }
+      - { name: cmake }
+      - { name: autoconf }
+      - { name: automake }
+      - { name: pkg-config }
+      - { name: ctags }
+      - { name: tree }
+      - { name: lv }
+      - { name: nkf }
+      - { name: jq }
+      - { name: go }
+      - { name: direnv }
+      - { name: peco }
+      - { name: rbenv }
+      - { name: ruby-build }
+      - { name: mysql }
+      - { name: sqlite }
+      - { name: redis }
+      - { name: imagemagick }
+      - { name: packer }
+      - { name: tmux }
+      - { name: phantomjs }
+      - { name: flac }
+      - { name: sox }
+      - { name: chromaprint }
+      - { name: fdk-aac }
+      - { name: libvorbis }
+      - { name: libvo-aacenc }
+      - { name: libvpx }
+      - { name: opus }
+      - { name: x264 }
+      - { name: yasm }
+      - { name: ffmpeg }
+      - { name: libxml2 }
+      - { name: libxslt }
+      - { name: libiconv }
+      - { name: v8 }
+
+    homebrew_cask_packages:
+      - { name: atom }
+      - { name: iterm2 }
+      - { name: firefox }
+      - { name: google-chrome }
+      - { name: google-japanese-ime }
+      - { name: adobe-reader }
+      - { name: java }
+      - { name: skype }
+      - { name: slack }
+      - { name: karabiner }
+      - { name: kobito }
+      - { name: vagrant }
+      - { name: hipchat }
+      - { name: coteditor }
+      - { name: sequel-pro }
+      - { name: witch }
+      - { name: macvim }
+      - { name: evernote }
+
+  tasks:
+    - name: add tap of homebrew
+      homebrew_tap: tap={{ item }} state=present
+      with_items: homebrew_taps
+
+    - name: install homebrew packages
+      homebrew: >
+        name={{ item.name }}
+        state={{ item.state | default('latest') }}
+        install_options={{
+          item.install_options | default() | join(',')
+          if item.install_options is not string
+          else item.install_options
+        }}
+      with_items: homebrew_packages
+      register: brew_result
+    - name: make directory for saving meta data of brew package
+      file: path=brew_info state=directory
+    - name: saving meta data of brew package
+      shell: brew info {{ item }} > brew_info/{{ item }}
+      with_items: brew_result.results | selectattr('changed') | map(attribute='item') | map(attribute='name') | list
+
+    # cask
+    - name: install homebrew-cask
+      homebrew: name=brew-cask state=latest
+    - name: add tap of homebrew-cask
+      homebrew_cask: name={{ item.name }} state={{ item.state|default('installed') }}
+      with_items: homebrew_cask_packages
+      register: cask_result
+    - name: make directory for saving meta data of cask package
+      file: path=cask_info state=directory
+    - name: saving meta data of cask package
+      shell: brew cask info {{ item }} > cask_info/{{ item }}
+      with_items: cask_result.results | selectattr('changed') | map(attribute='item') | map(attribute='name') | list
+
+  handlers:
+    - name: run fc-cache
+      shell: fc-cache -vf
