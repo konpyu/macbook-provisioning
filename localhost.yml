@@ -55,6 +55,7 @@
       - { name: libxslt }
       - { name: libiconv }
       - { name: v8 }
+      - { name: node }
 
     homebrew_cask_packages:
       - { name: atom }
